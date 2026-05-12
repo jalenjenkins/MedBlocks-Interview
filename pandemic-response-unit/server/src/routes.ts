@@ -54,14 +54,20 @@ router.post('/reserve-dose', async (req: Request, res: Response) => {
     //   DO UPDATE SET count = 500;
 
         // 2. Decrement stock
-        // await client.query ('BEGIN');
+        await client.query ('BEGIN');
         const updateReservation =  await client.query('UPDATE inventory SET count = count - 1 WHERE item_name = $1 AND count > 0', ['Pfizer-Batch-A']);
-        
+        if (updateReservation.rowCount == 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({error: 'No doses available'})
+        }
         // 3. Create reservation
         await client.query('INSERT INTO reservations (patient_id, status, timestamp) VALUES ($1, $2, NOW())', [patientId, 'CONFIRMED']);
 
+        await client.query('COMMIT')
         res.json({ success: true, message: 'Dose reserved' });
     } catch (err) {
+        console.error(err);
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
     } finally {
