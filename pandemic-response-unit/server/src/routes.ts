@@ -91,6 +91,10 @@ router.post('/ingest-vitals', async (req: Request, res: Response) => {
     // In a real app, we would save the encrypted vitals to DB here
 
     res.json({ success: true, message: 'Vitals processed' });
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: 'Encryption Failed'});
+    }
 });
 
 export default router;
